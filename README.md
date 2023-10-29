@@ -1,1 +1,1 @@
-# ps-order-service
+# ps-product-service
