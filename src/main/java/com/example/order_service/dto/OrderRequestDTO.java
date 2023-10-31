@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 @Getter
@@ -15,7 +16,9 @@ public class OrderRequestDTO {
 
     private UUID orderId;
     private String userId;
-    private String productId;
-    private Double price;
+
+    //<productId, quantity>
+    private HashMap<String, Integer> products;
+    private Double totalPrice;
 
 }
