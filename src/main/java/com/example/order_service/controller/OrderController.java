@@ -18,10 +18,9 @@ public class OrderController {
 
     @PostMapping("/create")
     public Order createOrder(@RequestBody OrderRequestDTO requestDTO){
-        requestDTO.setOrderId(UUID.randomUUID());
         return this.service.createOrder(requestDTO);
     }
-
+    
     @GetMapping("/all")
     public List<Order> getOrders(){
         return this.service.getAll();
