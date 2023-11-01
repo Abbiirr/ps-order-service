@@ -20,7 +20,7 @@ public class OrderController {
     public Order createOrder(@RequestBody OrderRequestDTO requestDTO){
         return this.service.createOrder(requestDTO);
     }
-    
+
     @GetMapping("/all")
     public List<Order> getOrders(){
         return this.service.getAll();
