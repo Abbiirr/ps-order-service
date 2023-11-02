@@ -1,7 +1,7 @@
 package com.example.order_service.consumer;
 
-import com.example.order_service.dto.OrderRequestDTO;
 import com.example.order_service.enums.KafkaTopics;
+import com.example.order_service.helper.EventFinder;
 import com.example.order_service.helper.KafkaMessager;
 import com.example.order_service.helper.MessageToDTOConverter;
 import com.example.order_service.repository.OrderRepository;
@@ -24,25 +24,24 @@ public class OrderConsumer {
 
     private final OrderRepository orderRepository;
     private final Set<String> getOrderEvents = ConcurrentHashMap.newKeySet();
+    private final EventFinder eventFinder;
 
 
-    public OrderConsumer(KafkaMessager kafkaMessager, MessageToDTOConverter messageToDTOConverter, OrderService service, OrderRepository orderRepository) {
+    public OrderConsumer(KafkaMessager kafkaMessager, MessageToDTOConverter messageToDTOConverter, OrderService service, OrderRepository orderRepository, EventFinder eventFinder) {
         this.kafkaMessager = kafkaMessager;
         this.messageToDTOConverter = messageToDTOConverter;
         this.service = service;
         this.orderRepository = orderRepository;
+        this.eventFinder = eventFinder;
     }
 
 
     @KafkaListener(topics = "get_order", groupId = "group_1", containerFactory = "kafkaListenerContainerFactory")
     public String getOrderListener(String message, Acknowledgment acknowledgment) {
         String eventId = MessageToDTOConverter.getField(message, "eventId");
-        if(getOrderEvents.contains(eventId)){
+        if(eventFinder.findDuplicateOrNot(eventId, "getOrderListener")){
             acknowledgment.acknowledge();
-            return "Completed";
-        }
-        else {
-            getOrderEvents.add(eventId);
+            return "Duplicate event";
         }
         String orderId = MessageToDTOConverter.getField(message, "orderId");
         if (orderId == null) {
