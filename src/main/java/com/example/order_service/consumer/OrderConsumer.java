@@ -8,6 +8,7 @@ import com.example.order_service.repository.OrderRepository;
 import com.example.order_service.service.OrderService;
 import com.example.order_service.entity.Order;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -32,14 +33,21 @@ public class OrderConsumer {
 
 
     @KafkaListener(topics = "get_order", groupId = "group_1", containerFactory = "kafkaListenerContainerFactory")
-    public String checkUserAndOrderListener(String message) {
-        OrderRequestDTO paymentRequestDTO = MessageToDTOConverter.convertToOrderRequestDTO(message);
-        Optional<Order> order = orderRepository.findById(paymentRequestDTO.getUserId());
-        if(!order.isPresent()){ //if success then return true
-            message = "User does not exists";
+    public String checkUserAndOrderListener(String message, Acknowledgment acknowledgment) {
+        String orderId = MessageToDTOConverter.getField(message, "orderId");
+        if(orderId == null) {
+            message = MessageToDTOConverter.addStatus(message, "fail");
         }
-
-        return kafkaMessager.sendMessage(KafkaTopics.POST_GET_ORDER.getTopicName(), paymentRequestDTO);
+        else {
+            Optional<Order> order = orderRepository.findById(orderId);
+            if (!order.isPresent()) { //if success then return true
+                message = MessageToDTOConverter.addStatus(message, "fail");
+            }
+            message = MessageToDTOConverter.addProductsToMessage(message, order.get().getProducts());
+        }
+        String response =  kafkaMessager.sendMessage(KafkaTopics.POST_GET_ORDER.getTopicName(), message);
+        acknowledgment.acknowledge();   
+        return response;
 
     }
 }

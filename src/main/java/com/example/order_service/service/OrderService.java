@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -25,7 +26,7 @@ public class OrderService {
 
     public Order createOrder(OrderRequestDTO orderRequestDTO) {
         Order purchaseOrder = this.orderRepository.save(Order.builder()
-                .id(orderRequestDTO.getOrderId())
+                .id(UUID.randomUUID())
                 .userId(orderRequestDTO.getUserId())
                 .products(orderRequestDTO.getProducts())
                 .totalPrice(orderRequestDTO.getTotalPrice())
