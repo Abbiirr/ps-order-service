@@ -12,6 +12,8 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class OrderConsumer {
@@ -21,7 +23,7 @@ public class OrderConsumer {
     private final OrderService service;
 
     private final OrderRepository orderRepository;
-
+    private final Set<String> getOrderEvents = ConcurrentHashMap.newKeySet();
 
 
     public OrderConsumer(KafkaMessager kafkaMessager, MessageToDTOConverter messageToDTOConverter, OrderService service, OrderRepository orderRepository) {
@@ -33,20 +35,30 @@ public class OrderConsumer {
 
 
     @KafkaListener(topics = "get_order", groupId = "group_1", containerFactory = "kafkaListenerContainerFactory")
-    public String checkUserAndOrderListener(String message, Acknowledgment acknowledgment) {
-        String orderId = MessageToDTOConverter.getField(message, "orderId");
-        if(orderId == null) {
-            message = MessageToDTOConverter.addStatus(message, "fail");
+    public String getOrderListener(String message, Acknowledgment acknowledgment) {
+        String eventId = MessageToDTOConverter.getField(message, "eventId");
+        if(getOrderEvents.contains(eventId)){
+            acknowledgment.acknowledge();
+            return "Completed";
         }
         else {
+            getOrderEvents.add(eventId);
+        }
+        String orderId = MessageToDTOConverter.getField(message, "orderId");
+        if (orderId == null) {
+            message = MessageToDTOConverter.addStatus(message, "fail");
+        } else {
             Optional<Order> order = orderRepository.findById(orderId);
             if (!order.isPresent()) { //if success then return true
                 message = MessageToDTOConverter.addStatus(message, "fail");
+                String response = kafkaMessager.sendMessage(KafkaTopics.POST_GET_ORDER.getTopicName(), message);
+                acknowledgment.acknowledge();
+                return response;
             }
             message = MessageToDTOConverter.addProductsToMessage(message, order.get().getProducts());
         }
-        String response =  kafkaMessager.sendMessage(KafkaTopics.POST_GET_ORDER.getTopicName(), message);
-        acknowledgment.acknowledge();   
+        String response = kafkaMessager.sendMessage(KafkaTopics.POST_GET_ORDER.getTopicName(), message);
+        acknowledgment.acknowledge();
         return response;
 
     }

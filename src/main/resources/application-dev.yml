@@ -12,9 +12,9 @@ spring:
       cache-null-values: false
       time-to-live: 300000
   kafka:
-    bootstrap-servers: localhost:8497
+    bootstrap-servers: localhost:8697
 
 server:
-  port: 8483
+  port: 8683
 
 
